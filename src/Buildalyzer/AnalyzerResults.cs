@@ -2,12 +2,13 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using NuGet.Frameworks;
 
 namespace Buildalyzer
 {
     public class AnalyzerResults : IAnalyzerResults
     {
-        private readonly ConcurrentDictionary<string, IAnalyzerResult> _results = new ConcurrentDictionary<string, IAnalyzerResult>();
+        private readonly ConcurrentDictionary<NuGetFramework, IAnalyzerResult> _results = new ConcurrentDictionary<NuGetFramework, IAnalyzerResult>();
 
         private bool? _overallSuccess = null;
 
@@ -17,22 +18,22 @@ namespace Buildalyzer
         {
             foreach (IAnalyzerResult result in results)
             {
-                _results[result.TargetFramework ?? string.Empty] = result;
+                _results[result.TargetFramework ?? NuGetFramework.AnyFramework] = result;
             }
             _overallSuccess = _overallSuccess.HasValue ? _overallSuccess.Value && overallSuccess : overallSuccess;
         }
 
-        public IAnalyzerResult this[string targetFramework] => _results[targetFramework];
+        public IAnalyzerResult this[NuGetFramework targetFramework] => _results[targetFramework];
 
-        public IEnumerable<string> TargetFrameworks => _results.Keys.OrderBy(e => e, TargetFrameworkComparer.Instance);
+        public IEnumerable<NuGetFramework> TargetFrameworks => _results.Keys.OrderBy(e => e, new NuGetFrameworkSorter());
 
         public IEnumerable<IAnalyzerResult> Results => TargetFrameworks.Select(e => _results[e]);
 
         public int Count => _results.Count;
 
-        public bool ContainsTargetFramework(string targetFramework) => _results.ContainsKey(targetFramework);
+        public bool ContainsTargetFramework(NuGetFramework targetFramework) => _results.ContainsKey(targetFramework);
 
-        public bool TryGetTargetFramework(string targetFramework, out IAnalyzerResult result) => _results.TryGetValue(targetFramework, out result);
+        public bool TryGetTargetFramework(NuGetFramework targetFramework, out IAnalyzerResult result) => _results.TryGetValue(targetFramework, out result);
 
         public IEnumerator<IAnalyzerResult> GetEnumerator() => Results.GetEnumerator();
 

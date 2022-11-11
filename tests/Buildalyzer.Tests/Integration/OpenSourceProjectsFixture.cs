@@ -9,6 +9,7 @@ using Buildalyzer.Environment;
 using LibGit2Sharp;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Framework;
+using NuGet.Frameworks;
 using NUnit.Framework;
 using Shouldly;
 
@@ -145,19 +146,7 @@ namespace Buildalyzer.Tests.Integration
             }
 #pragma warning restore 0162
 
-#if Is_Windows
             IAnalyzerResults results = analyzer.Build(options);
-#else
-            // On non-Windows platforms we have to remove the .NET Framework target frameworks and only build .NET Core target frameworks
-            // See https://github.com/dotnet/sdk/issues/826
-            string[] excludedTargetFrameworks = new[] { "net2", "net3", "net4", "portable" };
-            string[] targetFrameworks = analyzer.ProjectFile.TargetFrameworks.Where(x => !excludedTargetFrameworks.Any(y => x.StartsWith(y))).ToArray();
-            if (targetFrameworks.Length == 0)
-            {
-                Assert.Ignore();
-            }
-            IAnalyzerResults results = analyzer.Build(targetFrameworks, options);
-#endif
 
             // Then
             results.Count.ShouldBeGreaterThan(0, log.ToString());

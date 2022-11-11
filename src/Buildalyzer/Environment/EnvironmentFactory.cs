@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 using Buildalyzer.Construction;
 using Microsoft.Build.Utilities;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NuGet.Frameworks;
 
 namespace Buildalyzer.Environment
 {
@@ -27,13 +26,13 @@ namespace Buildalyzer.Environment
         public BuildEnvironment GetBuildEnvironment() =>
             GetBuildEnvironment(null, null);
 
-        public BuildEnvironment GetBuildEnvironment(string targetFramework) =>
+        public BuildEnvironment GetBuildEnvironment(NuGetFramework targetFramework) =>
             GetBuildEnvironment(targetFramework, null);
 
         public BuildEnvironment GetBuildEnvironment(EnvironmentOptions options) =>
             GetBuildEnvironment(null, options);
 
-        public BuildEnvironment GetBuildEnvironment(string targetFramework, EnvironmentOptions options)
+        public BuildEnvironment GetBuildEnvironment(NuGetFramework targetFramework, EnvironmentOptions options)
         {
             options = options ?? new EnvironmentOptions();
             BuildEnvironment buildEnvironment;
@@ -193,17 +192,7 @@ namespace Buildalyzer.Environment
             return !string.IsNullOrEmpty(msBuildExePath);
         }
 
-        private bool OnlyTargetsFramework(string targetFramework) =>
-            targetFramework == null ? _projectFile.TargetFrameworks.All(x => IsFrameworkTargetFramework(x)) : IsFrameworkTargetFramework(targetFramework);
-
-        // Internal for testing
-        // Because the .NET Core/.NET 5 TFMs are better defined, we just check if this is one of them and then negate
-        internal static bool IsFrameworkTargetFramework(string targetFramework) =>
-            !(targetFramework.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase)
-            || targetFramework.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase)
-            || (targetFramework.StartsWith("net", StringComparison.OrdinalIgnoreCase)
-                && targetFramework.Length > 3
-                && int.TryParse(new string(new[] { targetFramework[3] }), out int version)
-                && version >= 5));
+        private bool OnlyTargetsFramework(NuGetFramework targetFramework) =>
+            targetFramework == null ? _projectFile.TargetFrameworks.All(x => x.IsDesktop()) : targetFramework.IsDesktop();
     }
 }

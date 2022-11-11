@@ -5,6 +5,7 @@ using Buildalyzer.Environment;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Logging;
 using Microsoft.Extensions.Logging;
+using NuGet.Frameworks;
 
 namespace Buildalyzer
 {
@@ -78,7 +79,7 @@ namespace Buildalyzer
         /// </summary>
         /// <param name="targetFramework">The target framework to build.</param>
         /// <returns>The result of the build process.</returns>
-        IAnalyzerResults Build(string targetFramework);
+        IAnalyzerResults Build(NuGetFramework targetFramework);
 
         /// <summary>
         /// Builds a specific target framework. In a multi-targeted project this will still return a <see cref="AnalyzerResult"/> for each target framework,
@@ -87,7 +88,7 @@ namespace Buildalyzer
         /// <param name="targetFramework">The target framework to build.</param>
         /// <param name="buildEnvironment">The build environment to use for the build.</param>
         /// <returns>The result of the build process.</returns>
-        IAnalyzerResults Build(string targetFramework, BuildEnvironment buildEnvironment);
+        IAnalyzerResults Build(NuGetFramework targetFramework, BuildEnvironment buildEnvironment);
 
         /// <summary>
         /// Builds a specific target framework. In a multi-targeted project this will still return a <see cref="AnalyzerResult"/> for each target framework,
@@ -96,7 +97,7 @@ namespace Buildalyzer
         /// <param name="targetFramework">The target framework to build.</param>
         /// <param name="environmentOptions">The environment options to use for the build.</param>
         /// <returns>The result of the build process.</returns>
-        IAnalyzerResults Build(string targetFramework, EnvironmentOptions environmentOptions);
+        IAnalyzerResults Build(NuGetFramework targetFramework, EnvironmentOptions environmentOptions);
 
         /// <summary>
         /// Builds the requested target framework(s). In a multi-targeted project this will still return a <see cref="AnalyzerResult"/> for each target framework,
@@ -104,7 +105,7 @@ namespace Buildalyzer
         /// </summary>
         /// <param name="targetFrameworks">The set of target frameworks to build.</param>
         /// <returns>A dictionary of target frameworks to <see cref="AnalyzerResult"/>.</returns>
-        IAnalyzerResults Build(string[] targetFrameworks);
+        IAnalyzerResults Build(NuGetFramework[] targetFrameworks);
 
         /// <summary>
         /// Builds the requested target framework(s). In a multi-targeted project this will still return a <see cref="AnalyzerResult"/> for each target framework,
@@ -113,7 +114,7 @@ namespace Buildalyzer
         /// <param name="targetFrameworks">The set of target frameworks to build.</param>
         /// <param name="buildEnvironment">The build environment to use for the build.</param>
         /// <returns>A dictionary of target frameworks to <see cref="AnalyzerResult"/>.</returns>
-        IAnalyzerResults Build(string[] targetFrameworks, BuildEnvironment buildEnvironment);
+        IAnalyzerResults Build(NuGetFramework[] targetFrameworks, BuildEnvironment buildEnvironment);
 
         /// <summary>
         /// Builds the requested target framework(s). In a multi-targeted project this will still return a <see cref="AnalyzerResult"/> for each target framework,
@@ -122,7 +123,7 @@ namespace Buildalyzer
         /// <param name="targetFrameworks">The set of target frameworks to build.</param>
         /// <param name="environmentOptions">The environment options to use for the build.</param>
         /// <returns>A dictionary of target frameworks to <see cref="AnalyzerResult"/>.</returns>
-        IAnalyzerResults Build(string[] targetFrameworks, EnvironmentOptions environmentOptions);
+        IAnalyzerResults Build(NuGetFramework[] targetFrameworks, EnvironmentOptions environmentOptions);
 
         void AddBinaryLogger(
             string binaryLogFilePath = null,

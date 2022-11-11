@@ -4,10 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Xml.Linq;
 using Buildalyzer.Environment;
-using Microsoft.Build.Framework;
+using NuGet.Frameworks;
 using NUnit.Framework;
 using Shouldly;
 
@@ -19,6 +17,9 @@ namespace Buildalyzer.Tests.Integration
     {
         // Places the log file in C:/Temp
         private const bool BinaryLog = false;
+
+        private static readonly NuGetFramework Net462 = NuGetFramework.ParseFolder("net462");
+        private static readonly NuGetFramework NetStandard20 = NuGetFramework.ParseFolder("netstandard2.0");
 
         private static readonly EnvironmentPreference[] Preferences =
         {
@@ -130,7 +131,7 @@ namespace Buildalyzer.Tests.Integration
 
             // Then
             // If this is the multi-targeted project, use the net462 target
-            IReadOnlyList<string> sourceFiles = results.Count == 1 ? results.First().SourceFiles : results["net462"].SourceFiles;
+            IReadOnlyList<string> sourceFiles = results.Count == 1 ? results.First().SourceFiles : results[Net462].SourceFiles;
             sourceFiles.ShouldNotBeNull(log.ToString());
             new[]
             {
@@ -190,7 +191,7 @@ namespace Buildalyzer.Tests.Integration
 
                 // Then
                 // If this is the multi-targeted project, use the net462 target
-                IReadOnlyList<string> sourceFiles = results.Count == 1 ? results.First().SourceFiles : results["net462"].SourceFiles;
+                IReadOnlyList<string> sourceFiles = results.Count == 1 ? results.First().SourceFiles : results[Net462].SourceFiles;
                 sourceFiles.ShouldNotBeNull(log.ToString());
                 new[]
                 {
@@ -245,20 +246,20 @@ namespace Buildalyzer.Tests.Integration
             // Then
             // Multi-targeting projects product an extra result with an empty target framework that holds some MSBuild properties (I.e. the "outer" build)
             results.Count.ShouldBe(3);
-            results.TargetFrameworks.ShouldBe(new[] { "net462", "netstandard2.0", string.Empty }, ignoreOrder: false, log.ToString());
-            results[string.Empty].SourceFiles.ShouldBeEmpty();
+            results.TargetFrameworks.ShouldBe(new[] { NuGetFramework.AnyFramework, Net462, NetStandard20 }, ignoreOrder: false, log.ToString());
+            results[NuGetFramework.AnyFramework].SourceFiles.ShouldBeEmpty();
             new[]
             {
                 "AssemblyAttributes",
                 "Class1",
                 "AssemblyInfo"
-            }.ShouldBeSubsetOf(results["net462"].SourceFiles.Select(x => Path.GetFileName(x).Split('.').TakeLast(2).First()), log.ToString());
+            }.ShouldBeSubsetOf(results[Net462].SourceFiles.Select(x => Path.GetFileName(x).Split('.').TakeLast(2).First()), log.ToString());
             new[]
             {
                 "AssemblyAttributes",
                 "Class2",
                 "AssemblyInfo"
-            }.ShouldBeSubsetOf(results["netstandard2.0"].SourceFiles.Select(x => Path.GetFileName(x).Split('.').TakeLast(2).First()), log.ToString());
+            }.ShouldBeSubsetOf(results[NetStandard20].SourceFiles.Select(x => Path.GetFileName(x).Split('.').TakeLast(2).First()), log.ToString());
         }
 
         [Test]
@@ -279,10 +280,10 @@ namespace Buildalyzer.Tests.Integration
             IProjectAnalyzer analyzer = GetProjectAnalyzer(@"SdkMultiTargetingProject\SdkMultiTargetingProject.csproj", log);
 
             // When
-            IAnalyzerResults results = analyzer.Build("net462");
+            IAnalyzerResults results = analyzer.Build(Net462);
 
             // Then
-            IReadOnlyList<string> sourceFiles = results.First(x => x.TargetFramework == "net462").SourceFiles;
+            IReadOnlyList<string> sourceFiles = results.First(x => x.TargetFramework == Net462).SourceFiles;
             sourceFiles.ShouldNotBeNull(log.ToString());
             new[]
             {
@@ -300,10 +301,10 @@ namespace Buildalyzer.Tests.Integration
             IProjectAnalyzer analyzer = GetProjectAnalyzer(@"SdkMultiTargetingProject\SdkMultiTargetingProject.csproj", log);
 
             // When
-            IAnalyzerResults results = analyzer.Build("netstandard2.0");
+            IAnalyzerResults results = analyzer.Build(NetStandard20);
 
             // Then
-            IReadOnlyList<string> sourceFiles = results.First(x => x.TargetFramework == "netstandard2.0").SourceFiles;
+            IReadOnlyList<string> sourceFiles = results.First(x => x.TargetFramework == NetStandard20).SourceFiles;
             sourceFiles.ShouldNotBeNull(log.ToString());
             new[]
             {

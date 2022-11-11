@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NuGet.Frameworks;
 
 namespace Buildalyzer
 {
@@ -47,7 +48,7 @@ namespace Buildalyzer
 
         bool Succeeded { get; }
 
-        string TargetFramework { get; }
+        NuGetFramework TargetFramework { get; }
 
         string[] PreprocessorSymbols { get; }
 

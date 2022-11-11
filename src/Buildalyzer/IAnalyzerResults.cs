@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using NuGet.Frameworks;
 
 namespace Buildalyzer
 {
     public interface IAnalyzerResults : IEnumerable<IAnalyzerResult>
     {
-        IAnalyzerResult this[string targetFramework] { get; }
+        IAnalyzerResult this[NuGetFramework targetFramework] { get; }
 
         int Count { get; }
 
@@ -12,10 +13,10 @@ namespace Buildalyzer
 
         IEnumerable<IAnalyzerResult> Results { get; }
 
-        IEnumerable<string> TargetFrameworks { get; }
+        IEnumerable<NuGetFramework> TargetFrameworks { get; }
 
-        bool ContainsTargetFramework(string targetFramework);
+        bool ContainsTargetFramework(NuGetFramework targetFramework);
 
-        bool TryGetTargetFramework(string targetFramework, out IAnalyzerResult result);
+        bool TryGetTargetFramework(NuGetFramework targetFramework, out IAnalyzerResult result);
     }
 }

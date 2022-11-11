@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using NuGet.Frameworks;
 
 namespace Buildalyzer.Construction
 {
@@ -24,7 +25,7 @@ namespace Buildalyzer.Construction
         private readonly XDocument _document;
         private readonly XElement _projectElement;
 
-        private string[] _targetFrameworks = null;
+        private NuGetFramework[] _targetFrameworks = null;
 
         // The project file path should already be normalized
         internal ProjectFile(string path)
@@ -48,12 +49,11 @@ namespace Buildalyzer.Construction
         public string Name { get; }
 
         /// <inheritdoc />
-        public string[] TargetFrameworks => _targetFrameworks
-            ?? (_targetFrameworks = GetTargetFrameworks(
-                _projectElement.GetDescendants(ProjectFileNames.TargetFrameworks).Select(x => x.Value),
-                _projectElement.GetDescendants(ProjectFileNames.TargetFramework).Select(x => x.Value),
-                _projectElement.GetDescendants(ProjectFileNames.TargetFrameworkVersion)
-                    .Select(x => (x.Parent.GetDescendants(ProjectFileNames.TargetFrameworkIdentifier).FirstOrDefault()?.Value ?? ".NETFramework", x.Value))));
+        public NuGetFramework[] TargetFrameworks => _targetFrameworks ??= GetTargetFrameworks(
+            _projectElement.GetDescendants(ProjectFileNames.TargetFrameworks).Select(x => x.Value),
+            _projectElement.GetDescendants(ProjectFileNames.TargetFramework).Select(x => x.Value),
+            _projectElement.GetDescendants(ProjectFileNames.TargetFrameworkVersion)
+                .Select(x => (TargetFrameworkIdentifier: x.Parent.GetDescendants(ProjectFileNames.TargetFrameworkIdentifier).FirstOrDefault()?.Value ?? ".NETFramework", TargetFrameworkVersion: x.Value)));
 
         /// <inheritdoc />
         public bool UsesSdk =>
@@ -81,10 +81,10 @@ namespace Buildalyzer.Construction
         /// <inheritdoc />
         public string ToolsVersion => _projectElement.GetAttributeValue(ProjectFileNames.ToolsVersion);
 
-        internal static string[] GetTargetFrameworks(
+        internal static NuGetFramework[] GetTargetFrameworks(
             IEnumerable<string> targetFrameworksValues,
             IEnumerable<string> targetFrameworkValues,
-            IEnumerable<(string, string)> targetFrameworkIdentifierAndVersionValues)
+            IEnumerable<(string TargetFrameworkIdentifier, string TargetFrameworkVersion)> targetFrameworkIdentifierAndVersionValues)
         {
             // Use TargetFrameworks and/or TargetFramework if either were found
             IEnumerable<string> allTargetFrameworks = null;
@@ -106,50 +106,14 @@ namespace Buildalyzer.Construction
                 if (distinctTargetFrameworks.Length > 0)
                 {
                     // Only return if we actually found any
-                    return distinctTargetFrameworks;
+                    return distinctTargetFrameworks.Select(NuGetFramework.ParseFolder).ToArray();
                 }
             }
 
-            // Otherwise, try to find a TargetFrameworkIdentifier and/or TargetFrameworkVersion and puzzle it out
-            // This is really hacky, would be great to find an official mapping
-            // This is also unreliable because a particular TargetFrameworkIdentifier could result from different TargetFramework
-            // For example, both "win" and "uap" TargetFramework map back to ".NETCore" TargetFrameworkIdentifier
             return targetFrameworkIdentifierAndVersionValues?
-                .Where(value => value.Item1 != null && value.Item2 != null)
-                .Select(value =>
-                {
-                    // If we have a mapping, use it
-                    if (TargetFrameworkIdentifierToTargetFramework.TryGetValue(value.Item1, out (string, bool) targetFramework))
-                    {
-                        // Append the TargetFrameworkVersion, stripping non-digits (this probably isn't correct in some cases)
-                        return targetFramework.Item1 + new string(value.Item2.Where(x => char.IsDigit(x) || (targetFramework.Item2 && x == '.')).ToArray());
-                    }
-
-                    // Otherwise ¯\_(ツ)_/¯
-                    return null;
-                })
-                .Where(x => x != null).ToArray()
-                    ?? Array.Empty<string>();
+                .Where(value => value.TargetFrameworkIdentifier != null && value.TargetFrameworkVersion != null)
+                .Select(value => new NuGetFramework(value.TargetFrameworkIdentifier, Version.Parse(value.TargetFrameworkVersion.TrimStart('v'))))
+                .ToArray() ?? Array.Empty<NuGetFramework>();
         }
-
-        // Map from TargetFrameworkIdentifier back to a TargetFramework
-        // Partly from https://github.com/onovotny/sdk/blob/83d93a58c0955386218d536580eac2ab1582b397/src/Tasks/Microsoft.NET.Build.Tasks/build/Microsoft.NET.TargetFrameworkInference.targets
-        // See also https://blog.stephencleary.com/2012/05/framework-profiles-in-net.html
-        // Can't handle ".NETPortable" because those split out as complex "portable-" TargetFramework
-        // Value = (TargetFramework, preserve dots in version)
-        private static readonly Dictionary<string, (string, bool)> TargetFrameworkIdentifierToTargetFramework = new Dictionary<string, (string, bool)>
-        {
-            { ".NETStandard", ("netstandard", true) },
-            { ".NETCoreApp", ("netcoreapp", true) },
-            { ".NETFramework", ("net", false) },
-            { ".NETCore", ("uap", true) },
-            { "WindowsPhoneApp", ("wpa", false) },
-            { "WindowsPhone", ("wp", false) },
-            { "Xamarin.iOS", ("xamarinios", false) },
-            { "MonoAndroid", ("monoandroid", false) },
-            { "Xamarin.TVOS", ("xamarintvos", false) },
-            { "Xamarin.WatchOS", ("xamarinwatchos", false) },
-            { "Xamarin.Mac", ("xamarinmac", false) }
-        };
     }
 }

@@ -12,6 +12,7 @@ using Microsoft.Build.Construction;
 using Microsoft.Build.Logging;
 using Microsoft.Extensions.Logging;
 using MsBuildPipeLogger;
+using NuGet.Frameworks;
 using ILogger = Microsoft.Build.Framework.ILogger;
 
 namespace Buildalyzer
@@ -72,11 +73,11 @@ namespace Buildalyzer
         }
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string[] targetFrameworks) =>
+        public IAnalyzerResults Build(NuGetFramework[] targetFrameworks) =>
             Build(targetFrameworks, new EnvironmentOptions());
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string[] targetFrameworks, EnvironmentOptions environmentOptions)
+        public IAnalyzerResults Build(NuGetFramework[] targetFrameworks, EnvironmentOptions environmentOptions)
         {
             if (environmentOptions == null)
             {
@@ -86,12 +87,12 @@ namespace Buildalyzer
             // If the set of target frameworks is empty, just build the default
             if (targetFrameworks == null || targetFrameworks.Length == 0)
             {
-                targetFrameworks = new string[] { null };
+                targetFrameworks = new NuGetFramework[] { null };
             }
 
             // Create a new build environment for each target
             AnalyzerResults results = new AnalyzerResults();
-            foreach (string targetFramework in targetFrameworks)
+            foreach (NuGetFramework targetFramework in targetFrameworks)
             {
                 BuildEnvironment buildEnvironment = EnvironmentFactory.GetBuildEnvironment(targetFramework, environmentOptions);
                 BuildTargets(buildEnvironment, targetFramework, buildEnvironment.TargetsToBuild, results);
@@ -101,7 +102,7 @@ namespace Buildalyzer
         }
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string[] targetFrameworks, BuildEnvironment buildEnvironment)
+        public IAnalyzerResults Build(NuGetFramework[] targetFrameworks, BuildEnvironment buildEnvironment)
         {
             if (buildEnvironment == null)
             {
@@ -111,11 +112,11 @@ namespace Buildalyzer
             // If the set of target frameworks is empty, just build the default
             if (targetFrameworks == null || targetFrameworks.Length == 0)
             {
-                targetFrameworks = new string[] { null };
+                targetFrameworks = new NuGetFramework[] { null };
             }
 
             AnalyzerResults results = new AnalyzerResults();
-            foreach (string targetFramework in targetFrameworks)
+            foreach (NuGetFramework targetFramework in targetFrameworks)
             {
                 BuildTargets(buildEnvironment, targetFramework, buildEnvironment.TargetsToBuild, results);
             }
@@ -124,11 +125,11 @@ namespace Buildalyzer
         }
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string targetFramework) =>
+        public IAnalyzerResults Build(NuGetFramework targetFramework) =>
             Build(targetFramework, EnvironmentFactory.GetBuildEnvironment(targetFramework));
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string targetFramework, EnvironmentOptions environmentOptions) =>
+        public IAnalyzerResults Build(NuGetFramework targetFramework, EnvironmentOptions environmentOptions) =>
             Build(
                 targetFramework,
                 EnvironmentFactory.GetBuildEnvironment(
@@ -136,7 +137,7 @@ namespace Buildalyzer
                     environmentOptions ?? throw new ArgumentNullException(nameof(environmentOptions))));
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(string targetFramework, BuildEnvironment buildEnvironment) =>
+        public IAnalyzerResults Build(NuGetFramework targetFramework, BuildEnvironment buildEnvironment) =>
             BuildTargets(
                 buildEnvironment ?? throw new ArgumentNullException(nameof(buildEnvironment)),
                 targetFramework,
@@ -144,16 +145,16 @@ namespace Buildalyzer
                 new AnalyzerResults());
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build() => Build((string)null);
+        public IAnalyzerResults Build() => Build((NuGetFramework)null);
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(EnvironmentOptions environmentOptions) => Build((string)null, environmentOptions);
+        public IAnalyzerResults Build(EnvironmentOptions environmentOptions) => Build((NuGetFramework)null, environmentOptions);
 
         /// <inheritdoc/>
-        public IAnalyzerResults Build(BuildEnvironment buildEnvironment) => Build((string)null, buildEnvironment);
+        public IAnalyzerResults Build(BuildEnvironment buildEnvironment) => Build((NuGetFramework)null, buildEnvironment);
 
         // This is where the magic happens - returns one result per result target framework
-        private IAnalyzerResults BuildTargets(BuildEnvironment buildEnvironment, string targetFramework, string[] targetsToBuild, AnalyzerResults results)
+        private IAnalyzerResults BuildTargets(BuildEnvironment buildEnvironment, NuGetFramework targetFramework, string[] targetsToBuild, AnalyzerResults results)
         {
             using (CancellationTokenSource cancellation = new CancellationTokenSource())
             {
@@ -182,7 +183,7 @@ namespace Buildalyzer
 
         private string GetCommand(
             BuildEnvironment buildEnvironment,
-            string targetFramework,
+            NuGetFramework targetFramework,
             string[] targetsToBuild,
             string pipeLoggerClientHandle,
             out string arguments)
@@ -227,10 +228,10 @@ namespace Buildalyzer
 
             // Get the properties arguments (/property)
             Dictionary<string, string> effectiveGlobalProperties = GetEffectiveGlobalProperties(buildEnvironment);
-            if (!string.IsNullOrEmpty(targetFramework))
+            if (targetFramework != null)
             {
                 // Setting the TargetFramework MSBuild property tells MSBuild which target framework to use for the outer build
-                effectiveGlobalProperties[MsBuildProperties.TargetFramework] = targetFramework;
+                effectiveGlobalProperties[MsBuildProperties.TargetFramework] = targetFramework.GetShortFolderName();
             }
             if (Path.GetExtension(ProjectFile.Path).Equals(".fsproj", StringComparison.OrdinalIgnoreCase)
                 && effectiveGlobalProperties.ContainsKey(MsBuildProperties.SkipCompilerExecution))

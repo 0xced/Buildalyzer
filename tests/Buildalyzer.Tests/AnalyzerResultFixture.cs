@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -53,7 +54,7 @@ namespace Buildalyzer.Tests
         [TestCase("foo.cs bar.cs csc.dll", new[] { "foo.cs", "bar.cs" })]
         [TestCase("foo.cs csc.exe bar.cs", new[] { "foo.cs", "bar.cs" })]
         [TestCase("foo.cs bar.cs", new[] { "foo.cs", "bar.cs" })]
-        public void RemovesCscAssembliesFromSourceFiles(string input, string[] sourceFiles)
+        public void RemovesCscAssembliesFromSourceFiles([NotNull] string input, string[] sourceFiles)
         {
             // Given
             string commandLine = Path.Combine("/", "Fizz", "Buzz", "csc.exe") + " "
@@ -95,7 +96,7 @@ namespace Buildalyzer.Tests
 
         [TestCase("C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\MSBuild\\Current\\Bin\\Roslyn\\csc.exe /noconfig")]
         [TestCase("/one two/three/csc.dll /noconfig")]
-        public void TreatsCscCommandAsSingleArg(string commandLine)
+        public void TreatsCscCommandAsSingleArg([NotNull] string commandLine)
         {
             // Given, When
             AnalyzerResult.ProcessedCommandLine result = AnalyzerResult.ProcessCscCommandLine(commandLine);

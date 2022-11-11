@@ -7,6 +7,7 @@ using System.Text;
 using Buildalyzer.Construction;
 using Buildalyzer.Logging;
 using Microsoft.Build.Framework;
+using NuGet.Frameworks;
 
 namespace Buildalyzer
 {
@@ -76,7 +77,7 @@ namespace Buildalyzer
         public string GetProperty(string name) =>
             Properties.TryGetValue(name, out string value) ? value : null;
 
-        public string TargetFramework =>
+        public NuGetFramework TargetFramework =>
             ProjectFile.GetTargetFrameworks(
                 null,  // Don't want all target frameworks since the result is just for one
                 new[] { GetProperty(ProjectFileNames.TargetFramework) },

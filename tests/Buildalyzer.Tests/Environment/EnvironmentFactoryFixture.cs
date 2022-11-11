@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Buildalyzer.Environment;
+﻿using NuGet.Frameworks;
 using NUnit.Framework;
 using Shouldly;
 
@@ -81,7 +77,7 @@ namespace Buildalyzer.Tests.Environment
         public void IsFrameworkTargetFrameworkForTfm(string targetFramework, bool expected)
         {
             // Given, When
-            bool result = EnvironmentFactory.IsFrameworkTargetFramework(targetFramework);
+            bool result = NuGetFramework.ParseFolder(targetFramework).IsDesktop();
 
             // Then
             result.ShouldBe(expected);
